@@ -67,10 +67,18 @@
             cursor: crosshair;
             box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
             touch-action: none; 
-            max-width: 100%;
-            max-height: 100%;
+            
+            /* FIX 1: Forces the canvas to stretch to desktop sizes using crisp GPU scaling */
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 550px;
             object-fit: contain;
             aspect-ratio: 800 / 550;
+            
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
         }
 
         #temp-controls {
@@ -130,18 +138,39 @@
         .btn-lava { background-color: #dc2626; color: white; } 
         .btn-fire { background-color: #ea580c; color: white; }
 
+        /* FIX 2: MOBILE LAYOUT FLIP (Buttons Top, Canvas Bottom) */
         @media (max-width: 950px) {
             body { flex-direction: column; }
+            
+            /* Move AD to the very bottom so it doesn't get in the way */
             #ad-sidebar {
+                order: 3; 
                 width: 100%; height: 60px;
-                border-right: none; border-bottom: 2px solid #94a3b8; padding: 5px;
+                border-right: none; border-bottom: none; border-top: 2px solid #94a3b8;
+                padding: 5px;
             }
-            #canvas-container { padding: 5px; }
+            
+            #main-area { 
+                order: 1;
+                padding-top: 0; 
+                flex-grow: 1;
+            }
+            
+            /* Move controls to the TOP */
             #temp-controls {
+                order: 1; 
+                margin-top: 5px;
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
                 gap: 6px; padding: 10px;
             }
+            
+            /* Move canvas to the BOTTOM */
+            #canvas-container { 
+                order: 2;
+                padding: 5px; 
+            }
+            
             .brush-controls { grid-column: 1 / -1; margin-right: 0; justify-content: center; margin-bottom: 4px; }
             button { padding: 8px 4px; font-size: 11px; width: 100%; margin: 0 !important; }
         }
@@ -155,15 +184,15 @@
 
     <div id="main-area">
         <div id="canvas-container">
-            <canvas id="gameCanvas" width="800" height="550"></canvas>
+            <canvas id="gameCanvas"></canvas>
         </div>
         
         <div id="temp-controls">
             <div class="brush-controls">
                 <span style="font-weight: bold; color: #64748b; margin-right: 5px;">Size:</span>
-                <button class="btn-size" onclick="setBrush(4, this)">S</button>
-                <button class="btn-size active" onclick="setBrush(10, this)">M</button>
-                <button class="btn-size" onclick="setBrush(20, this)">L</button>
+                <button class="btn-size" onclick="setBrush(scaleVal(4), this)">S</button>
+                <button class="btn-size active" onclick="setBrush(scaleVal(10), this)">M</button>
+                <button class="btn-size" onclick="setBrush(scaleVal(20), this)">L</button>
             </div>
 
             <button class="btn-reset" onclick="resetGrid()">Reset</button>
@@ -186,37 +215,44 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false }); // Prevents browser overhead
+        const isMobile = window.innerWidth <= 768;
         
+        const cols = isMobile ? 200 : 400; 
+        const rows = isMobile ? 138 : 275; 
+
+        function scaleVal(val) {
+            return isMobile ? Math.max(1, Math.round(val / 2)) : val;
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        canvas.width = cols;
+        canvas.height = rows;
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        const puffSize = isMobile ? 16 : 30;
         const smokePuff = document.createElement('canvas');
-        smokePuff.width = 30; smokePuff.height = 30;
+        smokePuff.width = puffSize; smokePuff.height = puffSize;
         const sCtx = smokePuff.getContext('2d');
-        const grad = sCtx.createRadialGradient(15, 15, 0, 15, 15, 15);
+        const grad = sCtx.createRadialGradient(puffSize/2, puffSize/2, 0, puffSize/2, puffSize/2, puffSize/2);
         grad.addColorStop(0, 'rgba(100, 110, 125, 0.25)'); 
         grad.addColorStop(1, 'rgba(100, 110, 125, 0)');    
         sCtx.fillStyle = grad;
-        sCtx.fillRect(0, 0, 30, 30);
-        
-        const cols = 400; const rows = 275; const cellSize = 2; 
+        sCtx.fillRect(0, 0, puffSize, puffSize);
         
         let grid = new Array(cols).fill(0).map(() => new Array(rows).fill(0));
         let meta = new Array(cols).fill(0).map(() => new Array(rows).fill(0)); 
         let dirX = new Array(cols).fill(0).map(() => new Array(rows).fill(1));
         let dirY = new Array(cols).fill(0).map(() => new Array(rows).fill(0));
-        
-        // MEMORY OPTIMIZATION: Reusing single arrays instead of creating millions per second
         let moved = new Array(cols).fill(0).map(() => new Array(rows).fill(false));
+        
         const N_ADJ = [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [1,-1], [-1,1], [1,1]];
         const N_ORTHO = [[0,1],[0,-1],[1,0],[-1,0]];
 
-        // Pre-allocated typed arrays for drawing entities
-        let fishesX = new Int32Array(2000), fishesY = new Int32Array(2000), fishesE = new Int32Array(2000), fishesDX = new Int32Array(2000), fishCount = 0;
-        let mitesX = new Int32Array(5000), mitesY = new Int32Array(5000), miteCount = 0;
-        let smokesX = new Int32Array(30000), smokesY = new Int32Array(30000), smokeCount = 0;
+        let fishesX = new Int32Array(1000), fishesY = new Int32Array(1000), fishesE = new Int32Array(1000), fishesDX = new Int32Array(1000), fishCount = 0;
+        let mitesX = new Int32Array(2500), mitesY = new Int32Array(2500), miteCount = 0;
+        let smokesX = new Int32Array(10000), smokesY = new Int32Array(10000), smokeCount = 0;
         
-        // High-Speed 32-bit Direct Pixel Manipulation
-        const imgData = ctx.createImageData(800, 550);
+        const imgData = ctx.createImageData(cols, rows);
         const data32 = new Uint32Array(imgData.data.buffer);
         const isLittleEndian = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
         const bgColor = isLittleEndian ? 0xFFF9F5F1 : 0xF1F5F9FF;
@@ -228,8 +264,12 @@
             11: {r:220, g:38,  b:38}, 12: {r:132, g:204, b:22}, 13: {r:100, g:116, b:139}, 14: {r:186, g:230, b:253}
         };
 
-        let currentElement = E.Sand; let isDrawing = false; let frameCount = 0; let brushRadius = 10; 
-        let lastMouseX = -1; let lastMouseY = -1; let currentMouseDx = 0; let currentMouseDy = 0;
+        let currentElement = E.Sand; 
+        let isDrawing = false; 
+        let frameCount = 0; 
+        let brushRadius = scaleVal(10); 
+        let lastMouseX = -1; let lastMouseY = -1; 
+        let currentMouseDx = 0; let currentMouseDy = 0;
 
         function setBrush(size, btnElement) {
             brushRadius = size;
@@ -245,7 +285,6 @@
             }
         }
 
-        // --- GLOBALIZED GRID MATH (Prevents inner-loop allocations) ---
         function swapGrids(x1, y1, x2, y2) {
             let tempG = grid[x1][y1]; grid[x1][y1] = grid[x2][y2]; grid[x2][y2] = tempG;
             let tempM = meta[x1][y1]; meta[x1][y1] = meta[x2][y2]; meta[x2][y2] = tempM;
@@ -401,7 +440,7 @@
                                 if (target === E.Water) { grid[nx][ny] = E.Empty; moved[nx][ny] = true; dead = true; } 
                                 else if (target === E.Sand) { dead = true; } 
                                 else if (target === E.Oil || target === E.Gas) {
-                                    let blastRadius = target === E.Gas ? 7 : 8; 
+                                    let blastRadius = target === E.Gas ? scaleVal(7) : scaleVal(8); 
                                     for(let ox = -blastRadius; ox <= blastRadius; ox++) {
                                         for(let oy = -blastRadius; oy <= blastRadius; oy++) {
                                             if (ox*ox + oy*oy <= blastRadius*blastRadius) {
@@ -452,7 +491,7 @@
                                 if (target === E.Water) { grid[nx][ny] = E.Empty; moved[nx][ny] = true; dead = true; } 
                                 else if (target === E.Sand) { dead = true; } 
                                 else if (target === E.Oil || target === E.Gas) {
-                                    let blastRadius = target === E.Gas ? 7 : 8; 
+                                    let blastRadius = target === E.Gas ? scaleVal(7) : scaleVal(8); 
                                     for(let ox = -blastRadius; ox <= blastRadius; ox++) {
                                         for(let oy = -blastRadius; oy <= blastRadius; oy++) {
                                             if (ox*ox + oy*oy <= blastRadius*blastRadius) {
@@ -567,18 +606,19 @@
                                             grid[x+lDir][y] = E.Plant; meta[x+lDir][y] = 4; dirX[x+lDir][y] = lDir; dirY[x+lDir][y] = 1; moved[x+lDir][y] = true;
                                         }
                                     }
-                                    if (Math.random() < 0.02 && y > 20) {
+                                    if (Math.random() < 0.02 && y > scaleVal(20)) {
                                         meta[x][y] = 5; 
-                                        for (let i = -8; i <= 8; i++) {
-                                            for (let j = -8; j <= 8; j++) {
+                                        let bRad = scaleVal(8);
+                                        for (let i = -bRad; i <= bRad; i++) {
+                                            for (let j = -bRad; j <= bRad; j++) {
                                                 let nx = x + i, ny = y + j;
                                                 if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === E.Empty) {
                                                     let dist = Math.sqrt(i*i + j*j);
-                                                    if (dist < 1.5) { grid[nx][ny] = E.Plant; meta[nx][ny] = 5; moved[nx][ny] = true; } 
-                                                    else if (dist < 3.5) { grid[nx][ny] = E.Plant; meta[nx][ny] = 6; moved[nx][ny] = true; } 
-                                                    else if (dist < 8) {
+                                                    if (dist < scaleVal(1.5)) { grid[nx][ny] = E.Plant; meta[nx][ny] = 5; moved[nx][ny] = true; } 
+                                                    else if (dist < scaleVal(3.5)) { grid[nx][ny] = E.Plant; meta[nx][ny] = 6; moved[nx][ny] = true; } 
+                                                    else if (dist < bRad) {
                                                         let angle = Math.atan2(j, i); let ray = Math.cos(angle * 8); 
-                                                        if (dist < 4 + ray * 4) {
+                                                        if (dist < scaleVal(4) + ray * scaleVal(4)) {
                                                             grid[nx][ny] = E.Plant; meta[nx][ny] = 7; dirX[nx][ny] = Math.random() > 0.7 ? 1 : 0; moved[nx][ny] = true;
                                                         }
                                                     }
@@ -702,7 +742,7 @@
                             swapGrids(x, y, x, down);
                         } else {
                             if (!inLiquid && Math.random() < 0.02) { 
-                                let jumpHeight = Math.floor(Math.random() * 6) + 4; 
+                                let jumpHeight = Math.floor(Math.random() * scaleVal(6)) + scaleVal(4); 
                                 let targetY = Math.max(0, y - jumpHeight);
                                 let canJump = true;
                                 
@@ -745,8 +785,9 @@
                             continue;
                         }
 
-                        for (let i = -20; i <= 20; i++) {
-                            for (let j = -20; j <= 20; j++) {
+                        let searchR = scaleVal(20);
+                        for (let i = -searchR; i <= searchR; i++) {
+                            for (let j = -searchR; j <= searchR; j++) {
                                 let nx = x + i, ny = y + j;
                                 if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === E.Mite) {
                                     targetX = nx; targetY = ny; break;
@@ -790,14 +831,11 @@
 
         function draw() {
             fishCount = 0; miteCount = 0; smokeCount = 0;
-
-            // Direct 32-bit Memory Fill bypasses thousands of CPU object iterations per frame
             data32.fill(bgColor);
 
             for (let x = 0; x < cols; x++) {
                 for (let y = 0; y < rows; y++) {
                     let id = grid[x][y];
-                    
                     if (id === E.Empty) continue; 
                     
                     if (id === E.Smoke) { 
@@ -839,60 +877,51 @@
                         else if ((x * y) % 3 === 0) { r=186; g=230; b=253; }
                     }
 
-                    // Write 4 directly scaled pixels via direct memory access
                     let rInt = r | 0; let gInt = g | 0; let bInt = b | 0;
-                    let color32 = isLittleEndian 
+                    data32[y * cols + x] = isLittleEndian 
                         ? (255 << 24) | (bInt << 16) | (gInt << 8) | rInt 
                         : (rInt << 24) | (gInt << 16) | (bInt << 8) | 255;
-
-                    let idx = (y * 2) * 800 + (x * 2);
-                    data32[idx] = color32;
-                    data32[idx + 1] = color32;
-                    data32[idx + 800] = color32;
-                    data32[idx + 801] = color32;
                 }
             }
+            
             ctx.putImageData(imgData, 0, 0);
             
-            // Render High-Speed Entities using pre-allocated typed arrays
             for (let i = 0; i < smokeCount; i++) {
                 let sx = smokesX[i]; let sy = smokesY[i];
-                let pulse = Math.sin(frameCount * 0.05 + sx) * 3;
-                let size = (cellSize * 6) + pulse;
-                let px = (sx * cellSize) - (size / 2) + (cellSize / 2);
-                let py = (sy * cellSize) - (size / 2) + (cellSize / 2);
-                ctx.drawImage(smokePuff, px, py, size, size);
+                let pulse = Math.sin(frameCount * 0.05 + sx) * (isMobile ? 1.5 : 3);
+                let size = (isMobile ? 6 : 12) + pulse;
+                ctx.drawImage(smokePuff, sx - size/2, sy - size/2, size, size);
             }
 
             if (miteCount > 0) {
                 ctx.fillStyle = '#701a75';
                 ctx.beginPath();
                 for (let i = 0; i < miteCount; i++) {
-                    let px = mitesX[i] * cellSize; let py = mitesY[i] * cellSize;
-                    ctx.moveTo(px + 2, py); 
-                    ctx.arc(px, py, 2, 0, Math.PI*2);
+                    ctx.moveTo(mitesX[i] + 1, mitesY[i]); 
+                    ctx.arc(mitesX[i], mitesY[i], isMobile ? 1.2 : 2, 0, Math.PI*2);
                 }
                 ctx.fill();
             }
 
             for (let i = 0; i < fishCount; i++) {
-                let px = fishesX[i] * cellSize; let py = fishesY[i] * cellSize;
-                let s = Math.min(8, Math.floor(fishesE[i] / 15)); 
+                let px = fishesX[i]; let py = fishesY[i];
+                let s = Math.min(isMobile ? 4 : 8, Math.floor(fishesE[i] / 15)); 
                 let fDir = fishesDX[i] === 0 ? 1 : Math.sign(fishesDX[i]); 
+                let base = isMobile ? 2.5 : 5;
 
                 ctx.fillStyle = '#d97706'; 
-                ctx.beginPath(); ctx.ellipse(px, py, 5 + s, 3 + s, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(px, py, base + s, base*0.6 + s, 0, 0, Math.PI*2); ctx.fill();
                 
                 ctx.beginPath();
-                ctx.moveTo(px - fDir * (3 + s), py);
-                ctx.lineTo(px - fDir * (8 + s*1.5), py - (3 + s));
-                ctx.lineTo(px - fDir * (8 + s*1.5), py + (3 + s));
+                ctx.moveTo(px - fDir * (base*0.6 + s), py);
+                ctx.lineTo(px - fDir * (base*1.6 + s*1.5), py - (base*0.6 + s));
+                ctx.lineTo(px - fDir * (base*1.6 + s*1.5), py + (base*0.6 + s));
                 ctx.fill();
 
                 ctx.fillStyle = 'white';
-                ctx.beginPath(); ctx.arc(px + fDir * (2 + s), py - 1, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(px + fDir * (base*0.4 + s), py - 0.5, isMobile ? 0.8 : 1.5, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#0f172a';
-                ctx.beginPath(); ctx.arc(px + fDir * (3 + s), py - 1, 0.8, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(px + fDir * (base*0.6 + s), py - 0.5, isMobile ? 0.4 : 0.8, 0, Math.PI*2); ctx.fill();
             }
         }
 
