@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Falling Sand - Professional UI & Physics</title>
     <style>
-        /* Professional, slightly dimmed background */
         body {
             margin: 0;
             background-color: #e2e8f0; 
@@ -25,6 +24,7 @@
             justify-content: center;
             padding: 20px;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
 
         .ad-banner {
@@ -46,15 +46,17 @@
             align-items: center;
             justify-content: flex-start; 
             padding-top: 4vh; 
+            overflow-y: auto; 
         }
 
         canvas {
-            /* Soft off-white canvas - decreases harsh glare */
             background-color: #f1f5f9; 
             border: 4px solid #94a3b8;
             border-radius: 8px;
             cursor: crosshair;
             box-shadow: 0px 10px 25px rgba(0,0,0,0.1);
+            touch-action: none; 
+            max-width: 100%;
         }
 
         #temp-controls {
@@ -65,6 +67,8 @@
             justify-content: center;
             align-items: center;
             max-width: 950px;
+            padding: 0 10px;
+            padding-bottom: 20px;
         }
         
         button { 
@@ -93,39 +97,57 @@
         .btn-size { background-color: #f1f5f9; color: #475569; border-color: transparent; padding: 7px 12px;}
         .btn-size.active { background-color: #3b82f6; color: white; border-color: #2563eb; }
 
-        /* Professional, intuitive element colors */
         .btn-reset { background-color: #b91c1c; color: white; margin-right: 10px; }
         .btn-empty { background-color: #f8fafc; color: #334155; border: 2px solid #cbd5e1;}
         
-        .btn-wall { background-color: #64748b; color: white; } /* Slate Concrete */
-        .btn-sand { background-color: #d4b483; color: #4a3c22; } /* Desert Sand */
-        .btn-water { background-color: #0284c7; color: white; } /* Deep Ocean Blue */
-        .btn-ice { background-color: #bae6fd; color: #0c4a6e; } /* Frost Blue */
+        .btn-wall { background-color: #64748b; color: white; } 
+        .btn-sand { background-color: #d4b483; color: #4a3c22; } 
+        .btn-water { background-color: #0284c7; color: white; } 
+        .btn-ice { background-color: #bae6fd; color: #0c4a6e; } 
         
-        .btn-seed { background-color: #a3b18a; color: #283618; } /* Seed/Olive */
-        .btn-plant { background-color: #166534; color: white; } /* Forest Green */
-        .btn-fish { background-color: #d97706; color: white; } /* Amber Orange */
-        .btn-mite { background-color: #701a75; color: white; } /* Plum/Beetle */
+        .btn-seed { background-color: #a3b18a; color: #283618; } 
+        .btn-plant { background-color: #166534; color: white; } 
+        .btn-fish { background-color: #d97706; color: white; } 
+        .btn-mite { background-color: #701a75; color: white; } 
         
-        .btn-wind { background-color: #e2e8f0; color: #334155; border: 2px solid #cbd5e1; } /* Breezy Gray */
-        .btn-gas { background-color: #84cc16; color: #3f6212; } /* Toxic Green */
-        .btn-oil { background-color: #171717; color: white; } /* Pitch Black */
-        .btn-lava { background-color: #dc2626; color: white; } /* Magma Red */
-        .btn-fire { background-color: #ea580c; color: white; } /* Flame Orange */
+        .btn-wind { background-color: #e2e8f0; color: #334155; border: 2px solid #cbd5e1; } 
+        .btn-gas { background-color: #84cc16; color: #3f6212; } 
+        .btn-smoke { background-color: #94a3b8; color: white; } 
+        .btn-oil { background-color: #171717; color: white; } 
+        .btn-lava { background-color: #dc2626; color: white; } 
+        .btn-fire { background-color: #ea580c; color: white; }
+
+        @media (max-width: 950px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+            }
+            #ad-sidebar {
+                width: 100%;
+                height: 80px;
+                border-right: none;
+                border-bottom: 3px solid #94a3b8;
+                padding: 10px;
+            }
+            #main-area { padding-top: 15px; }
+            canvas { width: 95%; height: auto; }
+            button { padding: 8px 10px; font-size: 12px; }
+            .brush-controls { margin-right: 0px; width: 100%; justify-content: center; }
+        }
     </style>
 </head>
 <body>
 
     <div id="ad-sidebar">
-        <div class="ad-banner">Ad Space<br>320x600</div>
+        <div class="ad-banner">Ad Space</div>
     </div>
 
     <div id="main-area">
         <canvas id="gameCanvas" width="800" height="550"></canvas>
         
         <div id="temp-controls">
-            <button class="btn-reset" onclick="resetGrid()">Reset</button>
-
             <div class="brush-controls">
                 <span style="font-weight: bold; color: #64748b; margin-right: 5px;">Size:</span>
                 <button class="btn-size" onclick="setBrush(4, this)">S</button>
@@ -133,6 +155,7 @@
                 <button class="btn-size" onclick="setBrush(20, this)">L</button>
             </div>
 
+            <button class="btn-reset" onclick="resetGrid()">Reset</button>
             <button class="btn-empty" onclick="currentElement = 0">Empty</button>
             <button class="btn-wall" onclick="currentElement = 13">Wall</button>
             <button class="btn-sand" onclick="currentElement = 4">Sand</button>
@@ -144,6 +167,7 @@
             <button class="btn-mite" onclick="currentElement = 6">Mite</button>
             <button class="btn-wind" onclick="currentElement = 1">Wind</button>
             <button class="btn-gas" onclick="currentElement = 12">Gas</button>
+            <button class="btn-smoke" onclick="currentElement = 15">Smoke</button>
             <button class="btn-oil" onclick="currentElement = 10">Oil</button>
             <button class="btn-lava" onclick="currentElement = 11">Lava</button>
             <button class="btn-fire" onclick="currentElement = 9">Fire</button>
@@ -154,6 +178,18 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        // --- PRE-RENDERED VOLUMETRIC SMOKE BRUSH ---
+        // This completely eliminates the "bubble" effect by using a soft gradient stamp
+        const smokePuff = document.createElement('canvas');
+        smokePuff.width = 30;
+        smokePuff.height = 30;
+        const sCtx = smokePuff.getContext('2d');
+        const grad = sCtx.createRadialGradient(15, 15, 0, 15, 15, 15);
+        grad.addColorStop(0, 'rgba(100, 110, 125, 0.25)'); // Dark center
+        grad.addColorStop(1, 'rgba(100, 110, 125, 0)');    // Feathered edge
+        sCtx.fillStyle = grad;
+        sCtx.fillRect(0, 0, 30, 30);
+        
         const cols = 400; 
         const rows = 275;
         const cellSize = 2; 
@@ -163,20 +199,19 @@
         let dirX = new Array(cols).fill(0).map(() => new Array(rows).fill(1));
         let dirY = new Array(cols).fill(0).map(() => new Array(rows).fill(0));
         
-        const E = { Empty: 0, Wind: 1, Water: 3, Sand: 4, Fish: 5, Mite: 6, Plant: 7, Seed: 8, Fire: 9, Oil: 10, Lava: 11, Gas: 12, Wall: 13, Ice: 14 };
+        const E = { Empty: 0, Wind: 1, Water: 3, Sand: 4, Fish: 5, Mite: 6, Plant: 7, Seed: 8, Fire: 9, Oil: 10, Lava: 11, Gas: 12, Wall: 13, Ice: 14, Smoke: 15 };
         
-        // Refined, Professional Canvas Rendering Colors
         const Colors = { 
-            0: {r:241, g:245, b:249}, // Professional off-white background
-            1: {r:226, g:232, b:240}, // Wind
-            3: {r:2,   g:132, b:199}, // Ocean Water
-            4: {r:212, g:180, b:131}, // Natural Sand
-            9: {r:234, g:88,  b:12},  // Fire Orange
-            10: {r:23,  g:23,  b:23}, // Pitch Black Oil
-            11: {r:220, g:38,  b:38}, // Magma Red Lava
-            12: {r:132, g:204, b:22}, // Toxic Green Gas (base)
-            13: {r:100, g:116, b:139},// Slate Concrete Wall
-            14: {r:186, g:230, b:253} // Frost Blue Ice
+            0: {r:241, g:245, b:249}, 
+            1: {r:226, g:232, b:240}, 
+            3: {r:2,   g:132, b:199}, 
+            4: {r:212, g:180, b:131}, 
+            9: {r:234, g:88,  b:12},  
+            10: {r:23,  g:23,  b:23}, 
+            11: {r:220, g:38,  b:38}, 
+            12: {r:132, g:204, b:22}, 
+            13: {r:100, g:116, b:139},
+            14: {r:186, g:230, b:253}
         };
 
         let currentElement = E.Sand; 
@@ -196,10 +231,7 @@
         function resetGrid() {
             for (let x = 0; x < cols; x++) {
                 for (let y = 0; y < rows; y++) {
-                    grid[x][y] = E.Empty;
-                    meta[x][y] = 0;
-                    dirX[x][y] = 1;
-                    dirY[x][y] = 0;
+                    grid[x][y] = E.Empty; meta[x][y] = 0; dirX[x][y] = 1; dirY[x][y] = 0;
                 }
             }
         }
@@ -207,8 +239,15 @@
         function drawOnGrid(e) {
             if (!isDrawing) return;
             const rect = canvas.getBoundingClientRect();
-            const x = Math.floor(((e.clientX - rect.left) / rect.width) * cols);
-            const y = Math.floor(((e.clientY - rect.top) / rect.height) * rows);
+            
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+            }
+            
+            const x = Math.floor(((clientX - rect.left) / rect.width) * cols);
+            const y = Math.floor(((clientY - rect.top) / rect.height) * rows);
             
             if (lastMouseX !== -1 && lastMouseY !== -1) {
                 let dx = x - lastMouseX; let dy = y - lastMouseY;
@@ -219,8 +258,7 @@
             for(let i = -brushRadius; i <= brushRadius; i++) {
                 for(let j = -brushRadius; j <= brushRadius; j++) {
                     if (i*i + j*j <= brushRadius*brushRadius) {
-                        let nx = x + i;
-                        let ny = y + j;
+                        let nx = x + i; let ny = y + j;
 
                         if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
                             if (grid[nx][ny] === E.Wall && currentElement !== E.Empty) continue;
@@ -231,23 +269,21 @@
                             if (currentElement === E.Lava && Math.random() > 0.5) continue;
                             if (currentElement === E.Wind && Math.random() > 0.7) continue; 
                             if (currentElement === E.Gas && Math.random() > 0.6) continue; 
+                            if (currentElement === E.Smoke && Math.random() > 0.6) continue; 
                             if (currentElement === E.Mite && Math.random() > 0.005) continue; 
                             if (currentElement === E.Fish && Math.random() > 0.002) continue; 
                             if (currentElement === E.Seed && Math.random() > 0.05) continue; 
                             if (currentElement === E.Fire && Math.random() > 0.5) continue; 
 
-                            let drawId = currentElement;
-                            let drawMeta = 0;
+                            let drawId = currentElement; let drawMeta = 0;
 
                             if (currentElement === E.Seed) { drawId = E.Plant; drawMeta = 0; } 
                             else if (currentElement === E.Plant) { drawId = E.Plant; drawMeta = 3; } 
                             else if (currentElement === E.Wind) { drawMeta = brushRadius; }
 
-                            grid[nx][ny] = drawId;
-                            meta[nx][ny] = drawMeta; 
+                            grid[nx][ny] = drawId; meta[nx][ny] = drawMeta; 
                             
-                            let dx = Math.random() > 0.5 ? 1 : -1;
-                            let dy = Math.random() > 0.5 ? 1 : -1;
+                            let dx = Math.random() > 0.5 ? 1 : -1; let dy = Math.random() > 0.5 ? 1 : -1;
 
                             if (currentElement === E.Wind) {
                                 if (currentMouseDx === 0 && currentMouseDy === 0) {
@@ -269,6 +305,15 @@
         canvas.addEventListener('mouseleave', () => { isDrawing = false; lastMouseX = -1; });
         canvas.addEventListener('mousemove', drawOnGrid);
 
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); 
+            isDrawing = true; lastMouseX = -1; lastMouseY = -1;
+            currentMouseDx = 0; currentMouseDy = 0; drawOnGrid(e);
+        }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawOnGrid(e); }, { passive: false });
+        canvas.addEventListener('touchend', () => { isDrawing = false; lastMouseX = -1; });
+        canvas.addEventListener('touchcancel', () => { isDrawing = false; lastMouseX = -1; });
+
         function updateGrid() {
             frameCount++;
             let moved = new Array(cols).fill(0).map(() => new Array(rows).fill(false));
@@ -283,8 +328,7 @@
             function moveGrids(x1, y1, x2, y2, fill = E.Empty) {
                 grid[x2][y2] = grid[x1][y1]; grid[x1][y1] = fill;
                 meta[x2][y2] = meta[x1][y1]; meta[x1][y1] = 0;
-                dirX[x2][y2] = dirX[x1][y1]; dirX[x1][y1] = 0; 
-                dirY[x2][y2] = dirY[x1][y1]; dirY[x1][y1] = 0;
+                dirX[x2][y2] = dirX[x1][y1]; dirX[x1][y1] = 0; dirY[x2][y2] = dirY[x1][y1]; dirY[x1][y1] = 0;
                 moved[x1][y1] = true; moved[x2][y2] = true;
             }
 
@@ -298,17 +342,190 @@
                     let id = grid[x][y];
                     if (id === E.Empty || id === E.Wall) continue;
 
+                    // --- GAS LOGIC (PURE RANDOM ERRATIC MOTION) ---
+                    if (id === E.Gas) {
+                        let dx = dirX[x][y]; let dy = dirY[x][y];
+
+                        // Pure random walk in all directions
+                        if (Math.random() < 0.3) {
+                            dx = Math.floor(Math.random() * 3) - 1;
+                            dy = Math.floor(Math.random() * 3) - 1;
+                        }
+
+                        let nx = x + dx; let ny = y + dy;
+
+                        if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                            let target = grid[nx][ny];
+                            if (target === E.Empty) {
+                                moveGrids(x, y, nx, ny);
+                                dirX[nx][ny] = dx; dirY[nx][ny] = dy;
+                            } else if ([E.Water, E.Oil, E.Lava, E.Sand, E.Ice, E.Smoke].includes(target)) {
+                                swapGrids(x, y, nx, ny);
+                                dirX[nx][ny] = dx; dirY[nx][ny] = dy;
+                            } else {
+                                dirX[x][y] = Math.floor(Math.random() * 3) - 1;
+                                dirY[x][y] = Math.floor(Math.random() * 3) - 1;
+                            }
+                        } else {
+                            dirX[x][y] = Math.floor(Math.random() * 3) - 1;
+                            dirY[x][y] = Math.floor(Math.random() * 3) - 1; 
+                        }
+                    }
+
+                    // --- SMOKE LOGIC (Dissipating & Natural Drift) ---
+                    else if (id === E.Smoke) {
+                        if (Math.random() < 0.03) {
+                            grid[x][y] = E.Empty; moved[x][y] = true; continue;
+                        }
+
+                        let dx = dirX[x][y]; let dy = -1; // Drift upwards
+                        if (Math.random() < 0.25) dx = Math.floor(Math.random() * 3) - 1;
+
+                        let nx = x + dx; let ny = y + dy;
+
+                        if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                            let target = grid[nx][ny];
+                            if (target === E.Empty) {
+                                moveGrids(x, y, nx, ny);
+                                dirX[nx][ny] = dx; dirY[nx][ny] = dy;
+                            } else if ([E.Water, E.Oil, E.Lava, E.Sand, E.Ice, E.Plant, E.Gas].includes(target)) {
+                                if (Math.random() < 0.3) {
+                                    swapGrids(x, y, nx, ny);
+                                    dirX[nx][ny] = dx; dirY[nx][ny] = dy;
+                                } else {
+                                    dirX[x][y] = Math.random() > 0.5 ? 1 : -1;
+                                    dirY[x][y] = 0;
+                                }
+                            } else {
+                                dirX[x][y] = Math.random() > 0.5 ? 1 : -1;
+                                dirY[x][y] = 0;
+                            }
+                        } else {
+                            grid[x][y] = E.Empty; moved[x][y] = true; 
+                        }
+                    }
+
+                    // --- LAVA LOGIC (Slower Burns) ---
+                    else if (id === E.Lava) {
+                        let dead = false;
+                        let neighbors = [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [1,-1], [-1,1], [1,1]];
+                        
+                        for (let d of neighbors) {
+                            let nx = x + d[0], ny = y + d[1];
+                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                                let target = grid[nx][ny];
+                                if (target === E.Water) { grid[nx][ny] = E.Empty; moved[nx][ny] = true; dead = true; } 
+                                else if (target === E.Sand) { dead = true; } 
+                                else if (target === E.Oil || target === E.Gas) {
+                                    let blastRadius = target === E.Gas ? 7 : 8; 
+                                    for(let ox = -blastRadius; ox <= blastRadius; ox++) {
+                                        for(let oy = -blastRadius; oy <= blastRadius; oy++) {
+                                            if (ox*ox + oy*oy <= blastRadius*blastRadius) {
+                                                let ex = nx + ox, ey = ny + oy;
+                                                if (ex >= 0 && ex < cols && ey >= 0 && ey < rows) {
+                                                    let t = grid[ex][ey];
+                                                    if ([E.Oil, E.Gas, E.Smoke, E.Empty, E.Plant, E.Seed, E.Mite, E.Fish].includes(t)) {
+                                                        // REDUCED: Was 0.6, now 0.1 for slower explosion spread
+                                                        if (Math.random() < 0.1) { grid[ex][ey] = E.Fire; moved[ex][ey] = true; }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    dead = false; 
+                                } else if (target === E.Plant || target === E.Mite || target === E.Fish) {
+                                    // REDUCED: Was 0.15, now 0.04 for slower burning
+                                    if (Math.random() < 0.04) { grid[nx][ny] = E.Fire; meta[nx][ny] = 0; moved[nx][ny] = true; }
+                                }
+                            }
+                        }
+
+                        if (dead) {
+                            grid[x][y] = E.Empty; moved[x][y] = true;
+                        } else {
+                            let down = y + 1; let dir = Math.random() > 0.5 ? 1 : -1; 
+                            if (down < rows) {
+                                let b = grid[x][down];
+                                let b1 = (x + dir >= 0 && x + dir < cols) ? grid[x + dir][down] : -1;
+                                let b2 = (x - dir >= 0 && x - dir < cols) ? grid[x - dir][down] : -1;
+
+                                if (b === E.Empty && b1 === E.Empty && Math.random() < 0.2) moveGrids(x, y, x + dir, down);
+                                else if (b === E.Empty) moveGrids(x, y, x, down);
+                                else if (b1 === E.Empty) moveGrids(x, y, x + dir, down);
+                                else if (b2 === E.Empty) moveGrids(x, y, x - dir, down);
+                                else {
+                                    if (x + dir >= 0 && x + dir < cols && grid[x + dir][y] === E.Empty) moveGrids(x, y, x + dir, y);
+                                    else if (x - dir >= 0 && x - dir < cols && grid[x - dir][y] === E.Empty) moveGrids(x, y, x - dir, y);
+                                }
+                            }
+                        }
+                    }
+
+                    // --- FIRE LOGIC (Slower burns & Balanced Smoke) ---
+                    else if (id === E.Fire) {
+                        let dead = false;
+                        let neighbors = [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [1,-1], [-1,1], [1,1]];
+                        
+                        for (let d of neighbors) {
+                            let nx = x + d[0], ny = y + d[1];
+                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+                                let target = grid[nx][ny];
+                                
+                                if (target === E.Water) { grid[nx][ny] = E.Empty; moved[nx][ny] = true; dead = true; } 
+                                else if (target === E.Sand) { dead = true; } 
+                                else if (target === E.Oil || target === E.Gas) {
+                                    let blastRadius = target === E.Gas ? 7 : 8; 
+                                    for(let ox = -blastRadius; ox <= blastRadius; ox++) {
+                                        for(let oy = -blastRadius; oy <= blastRadius; oy++) {
+                                            if (ox*ox + oy*oy <= blastRadius*blastRadius) {
+                                                let ex = nx + ox, ey = ny + oy;
+                                                if (ex >= 0 && ex < cols && ey >= 0 && ey < rows) {
+                                                    let t = grid[ex][ey];
+                                                    if ([E.Oil, E.Gas, E.Smoke, E.Empty, E.Plant, E.Seed, E.Mite, E.Fish].includes(t)) {
+                                                        // REDUCED: Was 0.6, now 0.1 for slower explosion spread
+                                                        if (Math.random() < 0.1) { grid[ex][ey] = E.Fire; moved[ex][ey] = true; }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    dead = false; 
+                                } else if (target === E.Plant || target === E.Mite || target === E.Fish) {
+                                    // REDUCED: Was 0.15, now 0.04 for slower burning
+                                    if (Math.random() < 0.04) { grid[nx][ny] = E.Fire; meta[nx][ny] = 0; moved[nx][ny] = true; }
+                                }
+                            }
+                        }
+
+                        if (Math.random() < 0.05 && y - 1 >= 0 && grid[x][y-1] === E.Empty) {
+                            grid[x][y-1] = E.Smoke;
+                            dirX[x][y-1] = Math.floor(Math.random() * 3) - 1;
+                            dirY[x][y-1] = -1;
+                            moved[x][y-1] = true;
+                        }
+
+                        if (dead || Math.random() < 0.08) {
+                            grid[x][y] = E.Empty; moved[x][y] = true;
+                        } else {
+                            if (Math.random() < 0.4) {
+                                let dx = Math.floor(Math.random() * 3) - 1; let dy = -1; 
+                                let nx = x + dx, ny = y + dy;
+                                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === E.Empty) {
+                                    moveGrids(x, y, nx, ny);
+                                }
+                            }
+                        }
+                    }
+
                     // --- ICE LOGIC ---
-                    if (id === E.Ice) {
+                    else if (id === E.Ice) {
                         let meltingContact = false;
                         let neighbors = [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [1,-1], [-1,1], [1,1]];
                         
                         for (let d of neighbors) {
                             let nx = x + d[0], ny = y + d[1];
                             if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
-                                if (grid[nx][ny] === E.Fire || grid[nx][ny] === E.Lava) {
-                                    meltingContact = true; break;
-                                }
+                                if (grid[nx][ny] === E.Fire || grid[nx][ny] === E.Lava) { meltingContact = true; break; }
                             }
                         }
 
@@ -329,146 +546,14 @@
                             let down = y + 1;
                             if (down < rows) {
                                 let below = grid[x][down];
-                                if (below === E.Empty || below === E.Wind || below === E.Gas || below === E.Water) {
+                                if (below === E.Empty || below === E.Wind || below === E.Gas || below === E.Smoke || below === E.Water) {
                                     swapGrids(x, y, x, down);
                                 }
                             }
                         }
                     }
 
-                    // --- RANDOM GAS LOGIC ---
-                    else if (id === E.Gas) {
-                        let dx = dirX[x][y];
-                        let dy = dirY[x][y];
-
-                        if (Math.random() < 0.15) dx = Math.floor(Math.random() * 3) - 1;
-                        if (Math.random() < 0.15) dy = Math.floor(Math.random() * 3) - 1;
-
-                        let nx = x + dx;
-                        let ny = y + dy;
-
-                        if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
-                            let target = grid[nx][ny];
-                            if (target === E.Empty) {
-                                moveGrids(x, y, nx, ny);
-                                dirX[nx][ny] = dx; dirY[nx][ny] = dy;
-                            } else if (target === E.Water || target === E.Oil || target === E.Lava) {
-                                swapGrids(x, y, nx, ny);
-                                dirX[nx][ny] = dx; dirY[nx][ny] = dy;
-                            } else {
-                                dirX[x][y] = Math.floor(Math.random() * 3) - 1;
-                                dirY[x][y] = Math.floor(Math.random() * 3) - 1;
-                            }
-                        } else {
-                            dirX[x][y] = -dx || (Math.floor(Math.random() * 3) - 1);
-                            dirY[x][y] = -dy || (Math.floor(Math.random() * 3) - 1);
-                        }
-                    }
-
-                    // --- LAVA LOGIC ---
-                    else if (id === E.Lava) {
-                        let dead = false;
-                        let neighbors = [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [1,-1], [-1,1], [1,1]];
-                        
-                        for (let d of neighbors) {
-                            let nx = x + d[0], ny = y + d[1];
-                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
-                                let target = grid[nx][ny];
-                                if (target === E.Water) { grid[nx][ny] = E.Empty; moved[nx][ny] = true; dead = true; } 
-                                else if (target === E.Sand) { dead = true; } 
-                                else if (target === E.Oil || target === E.Gas) {
-                                    let blastRadius = target === E.Gas ? 7 : 8; 
-                                    for(let ox = -blastRadius; ox <= blastRadius; ox++) {
-                                        for(let oy = -blastRadius; oy <= blastRadius; oy++) {
-                                            if (ox*ox + oy*oy <= blastRadius*blastRadius) {
-                                                let ex = nx + ox, ey = ny + oy;
-                                                if (ex >= 0 && ex < cols && ey >= 0 && ey < rows) {
-                                                    let t = grid[ex][ey];
-                                                    if ([E.Oil, E.Gas, E.Empty, E.Plant, E.Seed, E.Mite, E.Fish].includes(t)) {
-                                                        if (Math.random() < 0.6) { grid[ex][ey] = E.Fire; moved[ex][ey] = true; }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    dead = false; 
-                                } else if (target === E.Plant || target === E.Mite || target === E.Fish) {
-                                    if (Math.random() < 0.15) { grid[nx][ny] = E.Fire; meta[nx][ny] = 0; moved[nx][ny] = true; }
-                                }
-                            }
-                        }
-
-                        if (dead) {
-                            grid[x][y] = E.Empty; moved[x][y] = true;
-                        } else {
-                            let down = y + 1;
-                            let dir = Math.random() > 0.5 ? 1 : -1; 
-                            if (down < rows) {
-                                let b = grid[x][down];
-                                let b1 = (x + dir >= 0 && x + dir < cols) ? grid[x + dir][down] : -1;
-                                let b2 = (x - dir >= 0 && x - dir < cols) ? grid[x - dir][down] : -1;
-
-                                if (b === E.Empty && b1 === E.Empty && Math.random() < 0.2) moveGrids(x, y, x + dir, down);
-                                else if (b === E.Empty) moveGrids(x, y, x, down);
-                                else if (b1 === E.Empty) moveGrids(x, y, x + dir, down);
-                                else if (b2 === E.Empty) moveGrids(x, y, x - dir, down);
-                                else {
-                                    if (x + dir >= 0 && x + dir < cols && grid[x + dir][y] === E.Empty) moveGrids(x, y, x + dir, y);
-                                    else if (x - dir >= 0 && x - dir < cols && grid[x - dir][y] === E.Empty) moveGrids(x, y, x - dir, y);
-                                }
-                            }
-                        }
-                    }
-
-                    // --- FIRE LOGIC ---
-                    else if (id === E.Fire) {
-                        let dead = false;
-                        let neighbors = [[0,-1], [0,1], [-1,0], [1,0], [-1,-1], [1,-1], [-1,1], [1,1]];
-                        
-                        for (let d of neighbors) {
-                            let nx = x + d[0], ny = y + d[1];
-                            if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
-                                let target = grid[nx][ny];
-                                
-                                if (target === E.Water) { grid[nx][ny] = E.Empty; moved[nx][ny] = true; dead = true; } 
-                                else if (target === E.Sand) { dead = true; } 
-                                else if (target === E.Oil || target === E.Gas) {
-                                    let blastRadius = target === E.Gas ? 7 : 8; 
-                                    for(let ox = -blastRadius; ox <= blastRadius; ox++) {
-                                        for(let oy = -blastRadius; oy <= blastRadius; oy++) {
-                                            if (ox*ox + oy*oy <= blastRadius*blastRadius) {
-                                                let ex = nx + ox, ey = ny + oy;
-                                                if (ex >= 0 && ex < cols && ey >= 0 && ey < rows) {
-                                                    let t = grid[ex][ey];
-                                                    if ([E.Oil, E.Gas, E.Empty, E.Plant, E.Seed, E.Mite, E.Fish].includes(t)) {
-                                                        if (Math.random() < 0.6) { grid[ex][ey] = E.Fire; moved[ex][ey] = true; }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    dead = false; 
-                                } else if (target === E.Plant || target === E.Mite || target === E.Fish) {
-                                    if (Math.random() < 0.15) { grid[nx][ny] = E.Fire; meta[nx][ny] = 0; moved[nx][ny] = true; }
-                                }
-                            }
-                        }
-
-                        if (dead || Math.random() < 0.02) {
-                            grid[x][y] = E.Empty; moved[x][y] = true;
-                        } else {
-                            if (Math.random() < 0.4) {
-                                let dx = Math.floor(Math.random() * 3) - 1;
-                                let dy = -1; 
-                                let nx = x + dx, ny = y + dy;
-                                if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === E.Empty) {
-                                    moveGrids(x, y, nx, ny);
-                                }
-                            }
-                        }
-                    }
-
-                    // --- PLANT & SEED LOGIC ---
+                    // --- UNLIMITED AGGRESSIVE PLANT LOGIC ---
                     else if (id === E.Plant) {
                         let m = meta[x][y];
                         let attached = false;
@@ -481,14 +566,11 @@
                                 poisoned = true; break;
                             }
                         }
-                        if (poisoned) {
-                            grid[x][y] = E.Empty; moved[x][y] = true; continue; 
-                        }
+                        if (poisoned) { grid[x][y] = E.Empty; moved[x][y] = true; continue; }
 
                         if (m === 0) {
                             if (y + 1 < rows) {
-                                let below = grid[x][y+1];
-                                let bMeta = meta[x][y+1];
+                                let below = grid[x][y+1]; let bMeta = meta[x][y+1];
                                 if (below === E.Sand || below === E.Water || below === E.Wall || (below === E.Plant && bMeta !== 0) || below === E.Ice) attached = true;
                             }
                         } else {
@@ -499,8 +581,7 @@
                         }
 
                         if (!attached) {
-                            let down = y + 1;
-                            let dir = Math.random() > 0.5 ? 1 : -1;
+                            let down = y + 1; let dir = Math.random() > 0.5 ? 1 : -1;
                             let below = (down < rows) ? grid[x][down] : -1;
 
                             if (below === E.Empty || below === E.Water) swapGrids(x, y, x, down);
@@ -515,30 +596,31 @@
                             for (let d of neighbors) {
                                 let nx = x + d[0], ny = y + d[1];
                                 if (nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[nx][ny] === E.Water) {
-                                    if (Math.random() < 0.1) { 
+                                    if (Math.random() < 0.6) { 
                                         grid[nx][ny] = E.Empty; moved[nx][ny] = true;
                                         drank = true; break;
                                     }
                                 }
                             }
 
-                            if (drank && Math.random() < 0.2) { 
+                            if (drank && Math.random() < 0.95) { 
                                 if (m === 0) { meta[x][y] = 1; dirY[x][y] = 1; } 
                                 else if (m === 1 || m === 3) {
-                                    let height = dirY[x][y];
-                                    if (height < 25 + Math.random() * 15) {
-                                        if (y-1 >= 0 && grid[x][y-1] === E.Empty) {
-                                            grid[x][y-1] = E.Plant; meta[x][y-1] = m; 
-                                            dirY[x][y-1] = height + 1; moved[x][y-1] = true;
+                                    // NO HEIGHT LIMIT: Continues to grow upwards endlessly
+                                    if (y-1 >= 0 && (grid[x][y-1] === E.Empty || grid[x][y-1] === E.Smoke)) {
+                                        grid[x][y-1] = E.Plant; meta[x][y-1] = m; 
+                                        dirY[x][y-1] = dirY[x][y] + 1; moved[x][y-1] = true;
+                                    }
+                                    
+                                    if (Math.random() < 0.6) {
+                                        let lDir = Math.random() > 0.5 ? 1 : -1;
+                                        if (x+lDir >= 0 && x+lDir < cols && grid[x+lDir][y] === E.Empty) {
+                                            grid[x+lDir][y] = E.Plant; meta[x+lDir][y] = 4; 
+                                            dirX[x+lDir][y] = lDir; dirY[x+lDir][y] = 1; moved[x+lDir][y] = true;
                                         }
-                                        if (Math.random() < 0.15) {
-                                            let lDir = Math.random() > 0.5 ? 1 : -1;
-                                            if (x+lDir >= 0 && x+lDir < cols && grid[x+lDir][y] === E.Empty) {
-                                                grid[x+lDir][y] = E.Plant; meta[x+lDir][y] = 4; 
-                                                dirX[x+lDir][y] = lDir; dirY[x+lDir][y] = 1; moved[x+lDir][y] = true;
-                                            }
-                                        }
-                                    } else {
+                                    }
+                                    
+                                    if (Math.random() < 0.02 && y > 20) {
                                         meta[x][y] = 5; 
                                         for (let i = -8; i <= 8; i++) {
                                             for (let j = -8; j <= 8; j++) {
@@ -560,12 +642,11 @@
                                         }
                                     }
                                 } else if (m === 4) {
-                                    let length = dirY[x][y];
-                                    if (length < 4 + Math.random() * 4) { 
+                                    if (Math.random() < 0.8) { 
                                         let lDir = dirX[x][y];
                                         if (x+lDir >= 0 && x+lDir < cols && y-1 >= 0 && grid[x+lDir][y-1] === E.Empty) {
                                             grid[x+lDir][y-1] = E.Plant; meta[x+lDir][y-1] = 4;
-                                            dirX[x+lDir][y-1] = lDir; dirY[x+lDir][y-1] = length + 1; moved[x+lDir][y-1] = true;
+                                            dirX[x+lDir][y-1] = lDir; dirY[x+lDir][y-1] = dirY[x][y] + 1; moved[x+lDir][y-1] = true;
                                         }
                                     }
                                 }
@@ -621,9 +702,9 @@
                             let b1 = (x + dir >= 0 && x + dir < cols) ? grid[x + dir][down] : -1;
                             let b2 = (x - dir >= 0 && x - dir < cols) ? grid[x - dir][down] : -1;
 
-                            let canFallSt = (b === E.Empty || b === E.Water || b === E.Oil || b === E.Lava);
-                            let canFallD1 = (b1 === E.Empty || b1 === E.Water || b1 === E.Oil || b1 === E.Lava);
-                            let canFallD2 = (b2 === E.Empty || b2 === E.Water || b2 === E.Oil || b2 === E.Lava);
+                            let canFallSt = (b === E.Empty || b === E.Smoke || b === E.Gas || b === E.Water || b === E.Oil || b === E.Lava);
+                            let canFallD1 = (b1 === E.Empty || b1 === E.Smoke || b1 === E.Gas || b1 === E.Water || b1 === E.Oil || b1 === E.Lava);
+                            let canFallD2 = (b2 === E.Empty || b2 === E.Smoke || b2 === E.Gas || b2 === E.Water || b2 === E.Oil || b2 === E.Lava);
 
                             if (canFallSt && canFallD1 && Math.random() < 0.15) swapGrids(x, y, x + dir, down);
                             else if (canFallSt) swapGrids(x, y, x, down);
@@ -642,13 +723,13 @@
                             let b2 = (x - dir >= 0 && x - dir < cols) ? grid[x - dir][down] : -1;
 
                             if (b === E.Empty && b1 === E.Empty && Math.random() < 0.2) moveGrids(x, y, x + dir, down);
-                            else if (b === E.Empty) moveGrids(x, y, x, down);
+                            else if (b === E.Empty || b === E.Smoke || b === E.Gas) swapGrids(x, y, x, down);
                             else if (b === E.Oil) swapGrids(x, y, x, down); 
-                            else if (b1 === E.Empty) moveGrids(x, y, x + dir, down);
-                            else if (b2 === E.Empty) moveGrids(x, y, x - dir, down);
+                            else if (b1 === E.Empty || b1 === E.Smoke || b1 === E.Gas) swapGrids(x, y, x + dir, down);
+                            else if (b2 === E.Empty || b2 === E.Smoke || b2 === E.Gas) swapGrids(x, y, x - dir, down);
                             else {
-                                if (x + dir >= 0 && x + dir < cols && grid[x + dir][y] === E.Empty) moveGrids(x, y, x + dir, y);
-                                else if (x - dir >= 0 && x - dir < cols && grid[x - dir][y] === E.Empty) moveGrids(x, y, x - dir, y);
+                                if (x + dir >= 0 && x + dir < cols && (grid[x + dir][y] === E.Empty || grid[x+dir][y] === E.Smoke)) swapGrids(x, y, x + dir, y);
+                                else if (x - dir >= 0 && x - dir < cols && (grid[x - dir][y] === E.Empty || grid[x-dir][y] === E.Smoke)) swapGrids(x, y, x - dir, y);
                             }
                         }
                     }
@@ -663,12 +744,12 @@
                             let b2 = (x - dir >= 0 && x - dir < cols) ? grid[x - dir][down] : -1;
 
                             if (b === E.Empty && b1 === E.Empty && Math.random() < 0.2) moveGrids(x, y, x + dir, down);
-                            else if (b === E.Empty) moveGrids(x, y, x, down);
-                            else if (b1 === E.Empty) moveGrids(x, y, x + dir, down);
-                            else if (b2 === E.Empty) moveGrids(x, y, x - dir, down);
+                            else if (b === E.Empty || b === E.Smoke || b === E.Gas) swapGrids(x, y, x, down);
+                            else if (b1 === E.Empty || b1 === E.Smoke || b1 === E.Gas) swapGrids(x, y, x + dir, down);
+                            else if (b2 === E.Empty || b2 === E.Smoke || b2 === E.Gas) swapGrids(x, y, x - dir, down);
                             else {
-                                if (x + dir >= 0 && x + dir < cols && grid[x + dir][y] === E.Empty) moveGrids(x, y, x + dir, y);
-                                else if (x - dir >= 0 && x - dir < cols && grid[x - dir][y] === E.Empty) moveGrids(x, y, x - dir, y);
+                                if (x + dir >= 0 && x + dir < cols && (grid[x + dir][y] === E.Empty || grid[x+dir][y] === E.Smoke)) swapGrids(x, y, x + dir, y);
+                                else if (x - dir >= 0 && x - dir < cols && (grid[x - dir][y] === E.Empty || grid[x-dir][y] === E.Smoke)) swapGrids(x, y, x - dir, y);
                             }
                         }
                     }
@@ -688,7 +769,7 @@
                         }
                         if (poisoned) { grid[x][y] = E.Empty; moved[x][y] = true; continue; }
 
-                        if (below === E.Empty) moveGrids(x, y, x, down); 
+                        if (below === E.Empty || below === E.Smoke || below === E.Gas) swapGrids(x, y, x, down); 
                         else if (below === E.Water && Math.random() < 0.2) swapGrids(x, y, x, down);
                         else {
                             let dx = dirX[x][y];
@@ -696,7 +777,7 @@
                             if (Math.random() < 0.05) { dx = -dx; dirX[x][y] = dx; }
 
                             let nx = x + dx;
-                            if (nx >= 0 && nx < cols && grid[nx][y] === E.Empty) moveGrids(x, y, nx, y);
+                            if (nx >= 0 && nx < cols && (grid[nx][y] === E.Empty || grid[nx][y] === E.Smoke)) swapGrids(x, y, nx, y);
                             else dirX[x][y] = -dx;
                         }
                     }
@@ -719,7 +800,7 @@
                         if (inOil) { grid[x][y] = E.Empty; meta[x][y] = 0; moved[x][y] = true; continue; }
                         if (!inWater) {
                             let down = y + 1;
-                            if (down < rows && grid[x][down] === E.Empty) moveGrids(x, y, x, down);
+                            if (down < rows && (grid[x][down] === E.Empty || grid[x][down] === E.Smoke)) swapGrids(x, y, x, down);
                             else { grid[x][y] = E.Empty; meta[x][y] = 0; moved[x][y] = true; } 
                             continue;
                         }
@@ -735,15 +816,12 @@
                         }
 
                         if (target) {
-                            let dx = Math.sign(target.x - x);
-                            let dy = Math.sign(target.y - y);
-                            let nx = x + dx, ny = y + dy;
-                            dirX[x][y] = dx;
+                            let dx = Math.sign(target.x - x); let dy = Math.sign(target.y - y);
+                            let nx = x + dx, ny = y + dy; dirX[x][y] = dx;
 
                             if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
                                 if (grid[nx][ny] === E.Mite) {
-                                    grid[nx][ny] = E.Water; 
-                                    meta[x][y] += 1; 
+                                    grid[nx][ny] = E.Water; meta[x][y] += 1; 
                                 } else if (grid[nx][ny] === E.Water || grid[nx][ny] === E.Empty) {
                                     swapGrids(x, y, nx, ny);
                                 }
@@ -776,13 +854,11 @@
 
             let fishes = [];
             let mites = [];
+            let smokes = [];
 
-            // Professional off-white background (#f1f5f9)
+            // Background
             for (let i = 0; i < data.length; i += 4) {
-                data[i] = 241;   
-                data[i+1] = 245; 
-                data[i+2] = 249; 
-                data[i+3] = 255; 
+                data[i] = 241; data[i+1] = 245; data[i+2] = 249; data[i+3] = 255; 
             }
 
             for (let x = 0; x < cols; x++) {
@@ -790,7 +866,9 @@
                     let id = grid[x][y];
                     
                     if (id === E.Empty) continue; 
-
+                    
+                    if (id === E.Smoke) { smokes.push({x, y}); continue; }
+                    
                     if (id === E.Fish) fishes.push({x, y, eaten: meta[x][y], dx: dirX[x][y]});
                     else if (id === E.Mite) mites.push({x, y});
                     else {
@@ -798,23 +876,23 @@
 
                         if (id === E.Plant) {
                             let m = meta[x][y];
-                            if (m === 0) c = {r: 163, g: 177, b: 138}; // Natural Seed 
-                            else if (m === 1) c = {r: 21, g: 128, b: 61}; // Forest Stem
-                            else if (m === 3) c = {r: 120, g: 53, b: 15}; // Bark Wood 
-                            else if (m === 4) c = {r: 22, g: 163, b: 74}; // Forest Leaf 
-                            else if (m === 5) c = {r: 234, g: 179, b: 8}; // Yellow Core
-                            else if (m === 6) c = {r: 249, g: 115, b: 22}; // Orange Ring
+                            if (m === 0) c = {r: 163, g: 177, b: 138};  
+                            else if (m === 1) c = {r: 21, g: 128, b: 61}; 
+                            else if (m === 3) c = {r: 120, g: 53, b: 15}; 
+                            else if (m === 4) c = {r: 22, g: 163, b: 74}; 
+                            else if (m === 5) c = {r: 234, g: 179, b: 8}; 
+                            else if (m === 6) c = {r: 249, g: 115, b: 22}; 
                             else if (m === 7) { 
                                 let v = dirX[x][y];
-                                if (v === 1) c = {r: 244, g: 114, b: 182}; // Soft Pink Petal
-                                else c = {r: 255, g: 255, b: 255}; // White Petal
+                                if (v === 1) c = {r: 244, g: 114, b: 182}; 
+                                else c = {r: 255, g: 255, b: 255}; 
                             }
                         } else if (id === E.Fire || id === E.Lava) {
                             let flicker = Math.random() * 30;
                             c = {r: Math.min(255, Colors[id].r + flicker), g: Colors[id].g + flicker, b: Colors[id].b};
                         } else if (id === E.Gas) {
                             let mix = Math.random();
-                            c = { r: 132 + mix * 40, g: 204, b: 22 + mix * 30 }; // Toxic green
+                            c = { r: 132 + mix * 40, g: 204, b: 22 + mix * 30 }; 
                         } else if (id === E.Ice) {
                             if ((x + y) % 4 === 0) c = {r: 224, g: 242, b: 254}; 
                             else if ((x * y) % 3 === 0) c = {r: 186, g: 230, b: 253};
@@ -832,8 +910,17 @@
                 }
             }
             ctx.putImageData(imgData, 0, 0);
+            
+            // NATURAL VOLUMETRIC SMOKE RENDER PASS (Using the Pre-Rendered Canvas Stamp)
+            for (let s of smokes) {
+                let pulse = Math.sin(frameCount * 0.05 + s.x) * 3;
+                let size = (cellSize * 6) + pulse;
+                let px = (s.x * cellSize) - (size / 2) + (cellSize / 2);
+                let py = (s.y * cellSize) - (size / 2) + (cellSize / 2);
+                ctx.drawImage(smokePuff, px, py, size, size);
+            }
 
-            ctx.fillStyle = '#701a75'; // Plum Mite
+            ctx.fillStyle = '#701a75'; // Mite
             for (let m of mites) {
                 let px = m.x * cellSize; let py = m.y * cellSize;
                 ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI*2); ctx.fill();
@@ -844,7 +931,7 @@
                 let s = Math.min(8, Math.floor(f.eaten / 15)); 
                 let dir = f.dx === 0 ? 1 : Math.sign(f.dx); 
 
-                ctx.fillStyle = '#d97706'; // Amber Fish
+                ctx.fillStyle = '#d97706'; // Fish
                 ctx.beginPath(); ctx.ellipse(px, py, 5 + s, 3 + s, 0, 0, Math.PI*2); ctx.fill();
                 
                 ctx.beginPath();
@@ -855,7 +942,7 @@
 
                 ctx.fillStyle = 'white';
                 ctx.beginPath(); ctx.arc(px + dir * (2 + s), py - 1, 1.5, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#0f172a'; // Slate eye
+                ctx.fillStyle = '#0f172a';
                 ctx.beginPath(); ctx.arc(px + dir * (3 + s), py - 1, 0.8, 0, Math.PI*2); ctx.fill();
             }
         }
